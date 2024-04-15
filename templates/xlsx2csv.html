@@ -1,0 +1,375 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+
+<!-- Mirrored from www.editcsvonline.com/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 11 Apr 2024 12:40:54 GMT -->
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>editCSV - Edit CSV files - by DataGridXL</title>
+
+  <script src="http://code.datagridxl.com/datagridxl.js"></script>
+  <script src="{% static 'libs/papaparse.min.js' %}"></script>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="manifest" href="site.html">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+
+<script lang="javascript" src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+
+<body>
+  <div class="myheader">
+    <div id="console-header">
+      <div><img style="margin-left: 10px;" src="{% static 'logo.svg' %}"></div>
+      <p style="color: #0edf1f;font-size:19px;margin-top: -9px;margin-left: 16px;">CSV Number Editor</p><br><br>
+      <div class="subheading">
+        <span id="home">Home</span>
+        <span id="merge">Merge</span>
+        <span id="xslx2csv">Xslx 2 csv</span>
+        <span id="clean-numbers">Clean numbers</span>
+      </div>
+      
+    </div>
+  </div><br>
+
+  <div id="app">
+
+    <div id="main">
+      <div class="tittlehead">Convert xslx to csv Online</div>
+        <div class="tittlesubhead">Comnvert your excel sheet to csv file</div>
+      <div class="upload">
+        <form action="" method="post">
+          {% csrf_token %}
+        <input type="file" id="file-input" style="display: none;" multiple accept=".xlsx">
+        <!-- Button to trigger file input -->
+        <button type="button" class="uploadbtn" id="upload-btn">Upload files <img style="height: 20px;" src="{% static 'upload.svg' %}" alt=""></button>
+      </form>
+      </div>
+      <script>
+        document.getElementById('home').addEventListener('click', function() {
+    // Navigate to the home page
+    window.location.href = "{% url 'home' %}";
+});
+document.getElementById('clean-numbers').addEventListener('click', function() {
+    // Navigate to the home page
+    window.location.href = "{% url 'home' %}";
+});
+
+document.getElementById('merge').addEventListener('click', function() {
+    // Navigate to the merge page
+    window.location.href = "{% url 'merge' %}";
+});
+document.getElementById('xslx2csv').addEventListener('click', function() {
+    // Navigate to the merge page
+    window.location.href = "{% url 'converttocsv' %}";
+});
+
+        document.addEventListener("DOMContentLoaded", function() {
+        // Get the file input element and upload button
+        const fileInput = document.getElementById('file-input');
+        const uploadButton = document.getElementById('upload-btn');
+        const iframeArea = document.getElementById('iframearea');
+        const files = fileInput.files;
+        // Add click event listener to the upload button
+        uploadButton.addEventListener('click', function() {
+            // Trigger the click event on the file input
+            fileInput.click();
+        });
+        const mergeButton = document.querySelector('.mergebtn');
+
+// Add onclick event listener to the merge button
+
+
+        // Add change event listener to the file input
+        fileInput.addEventListener('change', function() {
+            // Clear previous file list
+            iframeArea.innerHTML = '';
+
+            // Handle file selection
+            const files = fileInput.files;
+            // Iterate through selected files
+            for (const file of files) {
+                // Create a div element to represent the file
+                const fileDiv = document.createElement('div');
+                fileDiv.classList.add('file-item');
+                fileDiv.textContent = file.name;
+
+                // Create a placeholder thumbnail image
+                const thumbnailImg = document.createElement('img');
+                thumbnailImg.src = "{% static 'csvlogo.svg' %}"; // Placeholder image for CSV files
+                thumbnailImg.alt = file.name;
+                thumbnailImg.classList.add('thumbnail');
+                fileDiv.appendChild(thumbnailImg);
+
+                // Append the file div to the iframearea
+                iframeArea.appendChild(fileDiv);
+            }
+            mergeButton.addEventListener('click', function() {
+    // Call a function to handle the merge action
+    submitFiles(files);
+});
+        });
+
+        // Function to submit files asynchronously
+        function submitFiles(files) {
+            const formData = new FormData();
+            // Append each file to the FormData object
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            // Send the FormData object to the server using fetch API
+            fetch('/tocsv', {
+                method: 'POST',
+                body: formData,
+                headers: {
+            'X-CSRFToken': getCookie('csrftoken') // Get CSRF token from cookie
+        }
+            })
+            .then(response => response.json()) // Parse JSON response
+    .then(handleResponse) // Handle the response
+            .catch(error => {
+                // Handle error
+                console.error('Error submitting files:', error);
+            });
+        }
+    });
+
+    function handleResponse(response) {
+    // Check if the response contains the CSV content
+    if (!response) {
+        console.error('Invalid response format');
+        return;
+    }
+
+    // Convert the CSV content to a Blob
+    const blob = new Blob([response], { type: 'text/csv' });
+
+    // Create a temporary URL for the Blob
+    const url = URL.createObjectURL(blob);
+
+    // Create a link element
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'merged_file.csv'; // Set the desired filename for download
+    link.style.display = 'none';
+
+    // Append the link to the document body
+    document.body.appendChild(link);
+
+    // Simulate a click on the link to trigger the download
+    link.click();
+
+    // Clean up by revoking the temporary URL
+    URL.revokeObjectURL(url);
+}
+
+
+
+function convertExcelToCSVs(files) {
+  // Loop through each uploaded file
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const data = event.target.result;
+      const workbook = XLSX.read(data, { type: 'binary' });
+
+      // Process each sheet in the workbook
+      workbook.SheetNames.forEach(sheetName => {
+        const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+
+        // Create a Blob object for each sheet's CSV data
+        const csvBlob = new Blob([csv], { type: 'text/csv' });
+        
+        // Create a downloadable link for each sheet
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(csvBlob); // Create a temporary URL
+        downloadLink.download = `${file.name} - ${sheetName}.csv`; // Set filename
+        downloadLink.click(); // Simulate a click to trigger download
+        
+        // Revoke the temporary URL after download (optional)
+        URL.revokeObjectURL(downloadLink.href);
+      });
+    };
+    reader.readAsBinaryString(file);
+  }
+}
+
+// Example: Listen for file input change event
+const fileInput = document.getElementById('file-input');
+fileInput.addEventListener('click', function(event) {
+  const files = event.target.files;
+  if (files.length > 0) {
+    convertExcelToCSVs(files); // Handle multiple files
+  }
+});
+
+
+
+
+
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Check if the cookie name matches the provided name
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                // Extract and decode the cookie value
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+function convertAndDownload() {
+    const fileInput = document.getElementById('file-input');
+    const file = fileInput.files[0];
+    
+    const fileReader = new FileReader();
+    fileReader.onload = function(event) {
+        const data = event.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+
+        // Convert the first sheet to CSV format
+        const sheetName = workbook.SheetNames[0];
+        const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+        
+        // Create a Blob containing the CSV data
+        const blob = new Blob([csv], { type: 'text/csv' });
+        
+        // Extract file name without extension
+        const fileNameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+        
+        // Construct new file name with .csv extension
+        const newFileName = fileNameWithoutExtension + '.csv';
+        
+        // Create a URL for the Blob
+        const url = URL.createObjectURL(blob);
+        
+        // Create a link element to trigger the download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = newFileName;
+        link.style.display = 'none';
+        
+        // Append the link to the document body and click it programmatically
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up by revoking the URL
+        URL.revokeObjectURL(url);
+    };
+
+    fileReader.readAsBinaryString(file);
+}
+
+    </script>
+      <div id="iframearea"></div>
+      <div class="merge">
+        <button id="convertfile" class="mergebtn">convert file</button>
+
+      </div>
+      </div>
+      </div>
+<style>
+  #console-header img{
+    margin-left: 10px;
+  }
+  .mergebtn{
+    background-color: #0edf1f;
+    color: #fff;
+    outline: none;
+    border: none;
+  }
+  .mergebtn:hover{
+    color: black;
+  }
+  #iframearea{
+    width: 100%;
+    height: 400px;
+    background-color: #f4f4f4;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+  }
+  .upload{
+    width: 100%;
+    height: 70px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    margin-top: 40px;
+  }
+  .merge{
+    width: 100%;
+    height: 70px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+  }
+  .uploadbtn{
+    outline: none;
+
+  }
+  .tittlesubhead{
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    color: gray;
+    padding-top: 20px;
+  }
+  .tittlehead{
+    width: 100%;
+    text-align: center;
+    font-size: 28px;
+    padding-top: 50px;
+  }
+  .myheader{
+    width: 100%;
+    height: 58px;
+    background-color: #fff;
+  }
+  .subheading{
+    margin-top: 32px;
+    font-size: 14px;
+    margin-left: -163px;
+
+  }
+  .subheading span{
+    margin-right: 14px;
+    cursor: pointer;
+  }
+  .subheading span:hover{
+    color: #0edf1f;
+  }
+</style>
+
+   
+
+  <!-- Javascript -->
+	<script src="{% static 'index.js' %}"></script>
+
+  <!-- API -->
+  <script async defer src="https://api.editcsvonline.com/latest.js"></script>
+  <noscript><img src="https://api.editcsvonline.com/noscript.gif" alt=""></noscript>
+
+</body>
+
+
+<!-- Mirrored from www.editcsvonline.com/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 11 Apr 2024 12:41:50 GMT -->
+</html>

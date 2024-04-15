@@ -1,0 +1,698 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+
+<!-- Mirrored from www.editcsvonline.com/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 11 Apr 2024 12:40:54 GMT -->
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>editCSV - Edit CSV files - by DataGridXL</title>
+
+  <script src="http://code.datagridxl.com/datagridxl.js"></script>
+  <script src="{% static 'libs/papaparse.min.js' %}"></script>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="manifest" href="site.html">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+
+<body>
+  <div class="myheader">
+    <div id="console-header">
+      <div><a href="https://numspie.com/"><img src="{% static 'logo.svg' %}"></a></div>
+      <p style="color: #0edf1f;font-size:19px;margin-top: -9px;margin-left: 16px;">CSV Number Editor</p><br><br>
+      <div class="subheading">
+        <span id="home">Home</span>
+<span id="merge">Merge</span>
+<span id="xslx2csv">Xslx 2 csv</span>
+<span id="clean-numbers">Clean numbers</span>
+
+      </div>
+      
+    </div>
+  </div><br>
+
+  <div id="app">
+
+    <div id="main">
+<style>
+  a{
+    text-decoration: none;
+    color: #000;
+    
+  }
+  .myheader{
+    width: 100%;
+    height: 58px;
+    background-color: #fff;
+  }
+  .subheading{
+    margin-top: 32px;
+    font-size: 14px;
+    margin-left: -163px;
+
+  }
+  .subheading span{
+    margin-right: 14px;
+    cursor: pointer;
+  }
+  .subheading span:hover{
+    color: #0edf1f;
+  }
+</style>
+
+    <div id="app-header">
+
+
+
+      <div id="toolbar">
+
+        <div style="display:flex;">
+
+          <div id="new-button" style="margin-right:6px;">
+            <button type="button" id="new-button" onclick="app.createNew();">New</button>
+          </div>
+<form action="">
+  {% csrf_token %}
+          <div id="open-button">
+            <input type="file" name="file" id="file" /> 
+            <label for="file">Open…</label>
+            <div class="button-extras" onclick="showMenu(this.nextElementSibling);"><div>▾</div></div>
+            <div class="extra-options">
+              <!-- <div onclick="openDialog('url');">Open CSV from URL</div> -->
+              <div onclick="openDialog('string');">Paste CSV string</div>
+            </div>
+            <progress style="height: 15px;margin-left: 6px;border-radius: 6px;margin-top: 14px;" id="upload-progress" value="0" max="100"></progress>
+            <span style="margin-top: 9px;" id="progress-percentage">0%</span>
+          </div>
+        </form><br>
+        
+        </div>
+<script>
+
+
+  // Function to hide the progress bar
+function hideProgressBar() {
+    document.getElementById('upload-progress').style.display = 'none';
+    document.getElementById('progress-percentage').style.display = 'none';
+}
+hideProgressBar();
+// Event listener for the "New" button
+document.getElementById('new-button').addEventListener('click', function() {
+    // Hide the progress bar when "New" button is clicked
+    hideProgressBar();
+});
+
+// Event listener for the progress bar value reaching 100
+document.getElementById('upload-progress').addEventListener('change', function() {
+    // Check if the progress bar value is 100
+    if (this.value === '100') {
+        // Hide the progress bar when value is 100
+        hideProgressBar();
+    }
+});
+
+document.getElementById('file').addEventListener('change', function(event) {
+    // Show the progress bar when a file is selected
+    document.getElementById('upload-progress').style.display = 'block';
+    document.getElementById('progress-percentage').style.display = 'block';
+
+    const file = event.target.files[0];
+    const fileSize = file.size;
+    let uploadedBytes = 0;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload', true);
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        uploadedBytes = e.loaded;
+        const progress = (uploadedBytes / fileSize) * 100;
+        document.getElementById('upload-progress').value = progress;
+        document.getElementById('progress-percentage').textContent = `${progress.toFixed(2)}%`;
+      }
+    };
+
+    xhr.onload = function() {
+      // Upload complete
+      document.getElementById('upload-progress').value = 100;
+      document.getElementById('progress-percentage').textContent = '100%';
+    };
+
+    xhr.onerror = function() {
+      // Error handling
+      console.error('Error occurred during file upload.');
+    };
+
+    const formData = new FormData();
+    formData.append('file', file);
+    xhr.send(formData);
+  });
+</script>
+        <div id="app-file-status">
+          <div id="app-file-name" onclick="openFilenameEditor();"></div>
+        </div>
+<!-- 
+        <div id="main-toolbar">
+          <button type="button" onclick="app.undo();" class="icon-button" title="Undo"><img src="img/undo.svg"></button>
+          <button type="button" onclick="app.redo();" class="icon-button" title="Redo"><img src="img/redo.svg"></button>
+        </div> -->
+
+        <div id="save-button">
+
+          <button type="button" onclick="app.downloadDataAsCSV();">Save</button>
+<!--           <div class="button-extras" onclick="showMenu();"><div>▾</div></div>
+          <div class="extra-options">
+            <div>Save As</div>
+          </div> -->
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+<!--       <div id="decoy"></div> -->
+
+      <div id="grid"></div>
+
+<!--       <div id="consoleOptions">
+        log...
+      </div> -->
+
+      <div id="console">
+
+        <div id="console-handle" onclick="app.closeConsole();" title="Close Sidebar">
+          <img src="{% static 'img/triangle-right.svg' %}">
+        </div>
+
+      
+        <div id="console-content">
+
+          
+          <div class="section">
+            <button id="filterbtn" style="font-size: 13px;" onclick="filteractive()">Filter</button>
+            <button id="splitbtn" style="font-size: 13px;" onclick="splitactive()">Split</button>
+
+            <!-- <button>Filter</button> -->
+            <style>
+              input{
+                width: 250px;
+                height: 30px;
+              }
+            </style>
+            <div class="filter">
+              <form action="" method="post">
+               {% csrf_token %}
+                <p>Enter row title</p>
+                <input id="row_title" type="text">
+                <p>Enter parameter</p>
+                <input id="parameter" type="text"><br><br>
+                <button style="font-size: 13px;" type="button" onclick="removefiltered()">save filtered</button>
+                <button style="font-size: 13px;" type="button" onclick="savefiltered()">Remove filtered</button>
+              </form>
+            </div>
+
+
+            <div class="split">
+              <form action="" method="post">
+              <p>Enter number of rows per file</p>
+              <input type="text" id="num_rows"><br><br> 
+              <button type="button" onclick="splitfile()">Split</button>
+              </form>
+            </div>
+          </div>
+          <div id="clean">
+            <form action="" method="post">
+              {% csrf_token %}
+            <p>Enter row header with numbers <br> you wish to clean</p>
+          <input id="rowheader" placeholder="Enter the column you wish to clean" type="text"><br><br>
+          <button type="button" id="cleanbtnsubmit" style="font-size: 13px;" onclick="clean()">Submit</button>
+          <div id="download">Downloading...</div>
+              </form>
+          </div>
+          <div class="section">
+<style>
+  #download{
+    color: green;
+
+  }
+  button:hover{
+    background-color: #0edf1f;
+    color: #fff;
+    border: none;
+    outline: none;
+  }
+  button{
+    background-color:  rgb(231,231,231);
+      border-color:  rgb(201,201,201);
+      width: 100px;
+      height: 44px;
+
+  }
+  input{
+    border: 1px solid black;
+    height: 35px;
+    font-size: 14px;
+    padding-left: 6px;
+  }
+  #rowheader{
+    border: 1px solid red;
+  }
+
+</style>
+
+
+
+
+<div id="spinner" class="flex-col gap-4 w-full flex items-center justify-center">
+  <div class="w-28 h-28 border-8 text-blue-400 text-4xl animate-spin border-gray-300 flex items-center justify-center border-t-blue-400 rounded-full">
+    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em" class="animate-ping">
+    </svg>
+  </div>
+</div>
+
+
+            <h2>Meet <em>editCSV</em>!</h2>
+
+            <p>Edit your CSV files. No account neccessary!</p>
+
+            <p><em>edit CSV</em> is a <strong>100% free web app</strong> powered by  <a href="http://datagridxl.com/">DataGridXL</a>, the no-nonsense fast Excel-like Vanilla Javascript data table library.</p>
+
+            <!-- <div style="font-size:.8em;font-style:italic;margin-top:42px;">Edit JSON files instead? Jump to <a href="https://editjsononline.com/">editjsononline.com</a>!</div> -->
+
+          </div>
+
+          <script>
+   document.getElementById('clean').style.display = "none";
+   document.getElementById('download').style.display = "none";
+   document.getElementById('spinner').style.display = "none";
+
+             filter = document.querySelector(".filter");
+              filterbtn = document.getElementById("filterbtn");
+              filter.style.display = "block";
+              filterbtn.style.background = "#0edf1f";
+              filterbtn.style.border = "none";
+              filterbtn.style.color = "#fff";
+
+              split = document.querySelector(".split");
+            split.style.display = "none";
+              function splitactive(){
+              filter = document.querySelector(".filter");
+              split = document.querySelector(".split");
+              splitbtn = document.getElementById("splitbtn");
+              var clean = document.getElementById("clean");
+              filter.style.display = "none";
+              split.style.display = "block";
+              splitbtn.style.background = "#0edf1f";
+              splitbtn.style.border = "none";
+              splitbtn.style.color = "#fff";
+              clean.style.display = "none";
+
+
+              filterbtn = document.getElementById("filterbtn");
+              filterbtn.style.background = "";
+              filterbtn.style.border = "";
+              filterbtn.style.color = "";
+
+
+            }function filteractive(){
+              filter = document.querySelector(".filter");
+              filterbtn = document.getElementById("filterbtn");
+              filter.style.display = "block";
+              filterbtn.style.background = "#0edf1f";
+              filterbtn.style.border = "none";
+              filterbtn.style.color = "#fff";
+            document.getElementById('clean').style.display = "none";
+              
+
+            splitbtn = document.getElementById("splitbtn");
+            splitbtn.style.background = "";
+            splitbtn.style.border = "";
+            splitbtn.style.color = "";
+            split.style.display = "none";
+
+
+            }
+            function removefiltered() {
+  // Get file input element
+  var fileInput = document.getElementById('file').files[0];
+  // console.log(fileInput);
+  // Get row title input value
+  var rowTitleInput = document.getElementById('row_title').value;
+  // Get parameter input value
+  var parameterInput = document.getElementById('parameter').value;
+  
+  // Create FormData object
+  var formData = new FormData();
+  // Append file input value to FormData
+  formData.append('file', fileInput);
+  // Append row title to FormData
+  formData.append('row_title', rowTitleInput);
+  // Append parameter to FormData
+  formData.append('parameter', parameterInput);
+  
+  // Make a POST request to the server
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/removefiltered', true);
+  xhr.responseType = 'blob'; // Set the response type to blob
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      // Request was successful
+      var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'filtered_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+      console.log('Filtered data removed successfully.');
+    } else {
+      // Request failed
+      console.error('Failed to remove filtered data.');
+    }
+  };
+  xhr.send(formData);
+}
+
+
+function savefiltered() {
+  // Get file input element
+  var fileInput = document.getElementById('file').files[0];
+  // console.log(fileInput);
+  // Get row title input value
+  var rowTitleInput = document.getElementById('row_title').value;
+  // Get parameter input value
+  var parameterInput = document.getElementById('parameter').value;
+  
+  // Create FormData object
+  var formData = new FormData();
+  // Append file input value to FormData
+  formData.append('file', fileInput);
+  // Append row title to FormData
+  formData.append('row_title', rowTitleInput);
+  // Append parameter to FormData
+  formData.append('parameter', parameterInput);
+  
+  // Make a POST request to the server
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/savefiltered', true);
+  xhr.responseType = 'blob'; // Set the response type to blob
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      // Request was successful
+      var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'remaining_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+      console.log('Filtered data removed successfully.');
+    } else {
+      // Request failed
+      console.error('Failed to remove filtered data.');
+    }
+  };
+  xhr.send(formData);
+}
+
+
+
+
+
+function splitfile() {
+    var fileInput = document.getElementById('file').files[0];
+    var numRowsInput = document.getElementById('num_rows').value;
+
+    var formData = new FormData();
+    formData.append('file', fileInput);
+    formData.append('num_rows', numRowsInput);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/split', true);
+    xhr.responseType = 'blob'; // Set the response type to blob
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            // Request was successful
+            var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'split_files.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a); // Remove the anchor element after download
+            window.URL.revokeObjectURL(url);
+        } else {
+            // Request failed
+            console.error('Failed to split file.');
+        }
+    };
+    xhr.send(formData);
+}
+
+function clean() {
+  document.getElementById('download').style.display = "block";
+  document.getElementById('spinner').style.display = "block";
+  
+  // Get file input element
+  var fileInput = document.getElementById('file').files[0];
+  // console.log(fileInput);
+  // Get row title input value
+  var rowheader = document.getElementById('rowheader').value;
+  // Get parameter input value
+  
+  // Create FormData object
+  var formData = new FormData();
+  // Append file input value to FormData
+  formData.append('file', fileInput);
+  // Append row title to FormData
+  formData.append('rowheader', rowheader);
+  // Append parameter to FormData
+  var csrftoken = getCookie('csrftoken'); // Function to get CSRF token from cookie
+formData.append('csrfmiddlewaretoken', csrftoken);
+
+  // Make a POST request to the server
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/cleandata', true);
+  xhr.setRequestHeader('X-CSRFToken', csrftoken);
+  xhr.responseType = 'blob'; // Set the response type to blob
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      // Request was successful
+      var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'cleaned_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+      console.log('cleaned data removed successfully.');
+      document.getElementById('download').style.display = "none";
+    document.getElementById('spinner').style.display = "none";
+    } else {
+      // Request failed
+      console.error('Failed to remove cleaned data.');
+    }
+  };
+  xhr.send(formData);
+}
+
+function getCookie(name) {
+  var cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+document.getElementById('home').addEventListener('click', function() {
+    // Navigate to the home page
+    window.location.href = "{% url 'home' %}";
+});
+
+document.getElementById('merge').addEventListener('click', function() {
+    // Navigate to the merge page
+    window.location.href = "{% url 'merge' %}";
+});
+document.getElementById('xslx2csv').addEventListener('click', function() {
+    // Navigate to the merge page
+    window.location.href = "{% url 'converttocsv' %}";
+});
+
+document.getElementById('clean-numbers').addEventListener('click', function() {
+    // Navigate to the merge page
+   document.getElementById('clean').style.display = "block";
+   splitbtn = document.getElementById("splitbtn");   
+   split = document.querySelector(".split");
+            splitbtn.style.background = "";
+            splitbtn.style.border = "";
+            splitbtn.style.color = "";
+            split.style.display = "none";
+
+            filterbtn = document.getElementById("filterbtn");   
+   filter = document.querySelector(".filter");
+   filterbtn.style.background = "";
+   filterbtn.style.border = "";
+   filterbtn.style.color = "";
+   filter.style.display = "none";
+
+});
+
+
+
+          </script>
+
+          
+          <div class="section">
+
+            <h2>Controls</h2>
+
+            <table class="controls-table">
+
+              <tr class="header"><td colspan="2">Clipboard</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>X</b></td><td>Cut</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>C</b></td><td>Copy</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>V</b></td><td>Paste</td></tr>
+
+              <tr class="header"><td colspan="2">Selection</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>A</b></td><td>Select All</td></tr>
+              <tr><td><b class="mod">Shift</b> + <i>↑</i></td><td>Modify Selection Upwards</td></tr>
+              <tr><td><b class="mod">Shift</b> + <i>→</i></td><td>Modify Selection Rightwards</td></tr>
+              <tr><td><b class="mod">Shift</b> + <i>↓</i></td><td>Modify Selection Downwards</td></tr>
+              <tr><td><b class="mod">Shift</b> + <i>←</i></td><td>Modify Selection Leftwards</td></tr>
+
+              <tr class="header"><td colspan="2">Navigation</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b class="act">Home</b></td><td>Navigate to first cell of sheet</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b class="act">End</b></td><td>Navigate to last cell of sheet</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <i>↑</i></td><td>Navigate to first cell of current column</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <i>↓</i></td><td>Navigate to last cell of current column</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <i>←</i><div>or <b class="act">Home</b></div></td><td>Navigate to first cell of current row</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <i>→</i><div>or <b class="act">End</b></div></td><td>Navigate to last cell of current row</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b class="act">PgUp</b></td><td>Move cursor up one viewport</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b class="act">PgDn</b></td><td>Move cursor down one viewport</td></tr>
+
+              <tr class="header"><td colspan="2">Navigation (sheet)</td></tr>
+              <tr><td><i>↑</i></td><td>Navigate Up</td></tr>
+              <tr><td><i>→</i> or <b class="act">Tab</b></td><td>Navigate Right</td></tr>
+              <tr><td><i>↓</i></td><td>Navigate Down</td></tr>
+              <tr><td><i>←</i> or <b class="mod">Shift</b> + <b class="act">Tab</b></td><td>Navigate Left</td></tr>
+              <tr><td><b class="act">Enter</b></td><td>Enter Editor</td></tr>
+
+              <tr class="header"><td colspan="2">Navigation (inside selection)</td></tr>
+              <tr><td><b class="mod">Shift</b> + <b class="act">Enter</b></td><td>Navigate Up</td></tr>
+              <tr><td><b class="act">Tab</b></td><td>Navigate Right</td></tr>
+              <tr><td><b class="act">Enter</b></td><td>Navigate Down</td></tr>
+              <tr><td><b class="mod">Shift</b> + <b class="act">Tab</b></td><td>Navigate Left</td></tr>
+
+              <tr class="header"><td colspan="2">Manipulation</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>Z</b></td><td>Undo</td></tr>
+              <tr><td><b class="mod">Ctrl</b> + <b>Y</b></td><td>Redo</td></tr>
+              <tr><td><b class="long">Backspace</b> or <b class="act">Delete</b></td><td>Clear current cell selection</td></tr>
+
+            </table>
+
+          </div>
+
+
+         
+
+          <div class="ad" style="background:#e5f1ff;border-radius: 8px;padding:48px;margin-bottom:48px;">
+            <div style="font-weight:bold;font-size:1.2em;margin-bottom:.8em;">Coming Q3 2021: DataGridXL 2!</div>
+            <div><p>DataGridXL 2 adds dozens of new features! It will remain the most performant and reliable vanilla Javascript data grid with Excel-like controls.</p></div>
+            <div><a href="https://datagridxl.com/v2-coming-soon">Read more...</a></div>
+          </div>
+
+        </div>
+
+        <div id="console-footer">A free service by <a href="#">Praise munene</a></div>
+
+
+      </div>
+
+    </div>
+
+    <div id="overlay"></div>
+    <div id="dialog">
+
+      <div id="dialog-url">
+        <div class="dialog-header">
+          <div class="dialog-title">Open CSV from URL</div>
+          <button onclick="closeDialog();">&times;</button>
+        </div>
+        <div class="dialog-content">
+          <div>
+            <div>Type the URL of a valid CSV file.</div>
+            <ul>
+              <li>URL must include scheme (like http:// or https://)</li>
+              <li>Remote file must have Access-Control-Allow-Origin header</li>
+            </ul>
+          </div>
+          <input type="text" id="url-input" oninput="this.classList.remove('input-error');" />
+        </div>
+        <div class="dialog-actions">
+          <button onclick="loadRemoteFile(this.parentNode.previousElementSibling.lastElementChild.value);">Load</button>
+        </div>
+      </div>
+
+      <div id="dialog-string">
+        <div class="dialog-header">
+          <div class="dialog-title">Paste CSV String</div>
+          <button onclick="closeDialog();">&times;</button>
+        </div>
+        <div class="dialog-content">
+<textarea id="csv-textarea" oninput="this.classList.remove('textarea-error');">Column 1,Column 2,Column 3,Column 4
+1-1,1-2,1-3,1-4
+2-1,2-2,2-3,2-4
+3-1,3-2,3-3,3-4
+4-1,4-2,4-3,4-4</textarea>
+        </div>
+        <div class="dialog-actions">
+          <button onclick="parseCSVString(this.parentNode.previousElementSibling.firstElementChild.value);">Load</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="touch-input" class="dgxl-app">
+    <div id="cell-coord"></div>
+    <!-- <input type="text" id="cell-value" oninput="grid.setCellValues(grid.getCellCursorPosition(),this.value);"> -->
+    <textarea id="cell-value" oninput="grid.setCellValues(grid.getCellCursorPosition(),this.value);"></textarea>
+  </div>
+
+  <!-- Javascript -->
+	<script src="{% static 'index.js' %}"></script>
+
+  <!-- API -->
+  <script async defer src="https://api.editcsvonline.com/latest.js"></script>
+  <noscript><img src="https://api.editcsvonline.com/noscript.gif" alt=""></noscript>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+</body>
+
+
+<!-- Mirrored from www.editcsvonline.com/ by HTTrack Website Copier/3.x [XR&CO'2014], Thu, 11 Apr 2024 12:41:50 GMT -->
+</html>

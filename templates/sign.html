@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title> Responsive Login and Signup Form </title>
+
+        <!-- CSS -->
+        <link rel="stylesheet" href="{% static 'css/sign.css' %}">
+                
+        <!-- Boxicons CSS -->
+        <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+                        
+    </head>
+    <body>
+        <section class="container forms">
+            <div class="form login">
+                <div class="form-content">
+                    <header>Login</header>
+                    <form action="#" method="post" id="loginform">
+                        {% csrf_token %}
+                        <div class="field input-field">
+                            <input type="text" id="loginusername" name="loginusername" placeholder="Username" class="input">
+                        </div>
+                        
+                        <div class="field input-field">
+                            <input type="password" id="loginpassword" name="loginpassword" placeholder="Password" class="password">
+                            <i class='bx bx-hide eye-icon'></i>
+                        </div>
+
+                        <div class="form-link">
+                            <a href="#" class="forgot-pass">Forgot password?</a>
+                        </div>
+
+                        <div class="field button-field">
+                            <button id="login" type="button">Login</button>
+                        </div>
+                    </form>
+                    <script>
+                       document.getElementById('login').addEventListener('click', async function () {
+                            const loginpassword = document.getElementById('loginpassword').value;
+                            const loginusername = document.getElementById('loginusername').value;
+                    
+              
+                          
+                    
+                            const loginform = document.getElementById('loginform');
+                            const loginformData = new FormData(loginform);
+                            
+                            try {
+                                const response = await fetch('signin', {
+                                    method: 'POST',
+                                    body: loginformData
+                                });
+                    
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    console.log(data); // Handle successful response data
+                                    window.location.href = "/";
+                                } else {
+                                    throw new Error('Failed to submit form');
+                                }
+                            } catch (error) {
+                                console.error('Error submitting form:', error);
+                            }
+                        });
+                    </script>
+                    
+                    <div class="form-link">
+                        <span>Don't have an account? <a href="#" class="link signup-link">Signup</a></span>
+                    </div>
+                </div>
+
+                <div class="line"></div>
+
+                <div class="media-options">
+                    <a href="#" class="field google">
+                        <img src="{% static 'img/google.png' %}" alt="" class="google-img">
+                        <span>Login with Google</span>
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Signup Form -->
+
+            <div class="form signup">
+                <div class="form-content">
+                    <header>Signup</header>
+                    <form action="#" method="post" id="signupForm">
+                        {% csrf_token %}
+                        <div class="field input-field">
+                            <input type="text" name="username" id="Username" placeholder="username" class="input">
+                        </div>
+
+                        <div class="field input-field">
+                            <input type="text" name="number" id="number" placeholder="phonenumber" class="input">
+                        </div>
+
+                        <div class="field input-field">
+                            <input type="email" name="email" id="email" placeholder="email" class="input">
+                        </div>
+
+                        <div class="field input-field">
+                            <input type="text" id="country" name="country" placeholder="country" class="input">
+                        </div>
+
+                        <div class="field input-field">
+                            <input type="password" name="password" id="password" placeholder="Create password" class="password">
+                        </div>
+
+                        <div class="field input-field">
+                            <input type="password" name="confirmpassword" id="confirmpassword" placeholder="Confirm password" class="password">
+                            <i class='bx bx-hide eye-icon'></i>
+                        </div>
+
+                        <div class="field button-field">
+                            <button type="button" id="signup">Signup</button>
+                        </div>
+                    </form>
+                    <script>
+                        document.getElementById('signup').addEventListener('click', async function () {
+                            const password = document.getElementById('password').value;
+                            const confirmPassword = document.getElementById('confirmpassword').value;
+                    
+                            // Check if passwords match
+                            if (password !== confirmPassword) {
+                                alert('Passwords do not match');
+                                return; // Stop form submission
+                            }
+                    
+                            const form = document.getElementById('signupForm');
+                            const formData = new FormData(form);
+                            
+                            try {
+                                const response = await fetch('signup', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                    
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    console.log(data); // Handle successful response data
+                                } else {
+                                    throw new Error('Failed to submit form');
+                                }
+                            } catch (error) {
+                                console.error('Error submitting form:', error);
+                            }
+                        });
+                    </script>
+                    
+                    <div class="form-link">
+                        <span>Already have an account? <a href="#" class="link login-link">Login</a></span>
+                    </div>
+                </div>
+
+                <div class="line"></div>
+
+                <div class="media-options">
+                    <a href="#" class="field google">
+                        <img src="{% static 'img/google.png' %}" alt="" class="google-img">
+                        <span>Login with Google</span>
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- JavaScript -->
+        <script src="{% static 'js/script.js' %}"></script>
+    </body>
+</html>
